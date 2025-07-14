@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Access Terminal</title>
+    <style>
+        /* --- LOGIN SYSTEM STYLES --- */
+        body {
+            font-family: 'Courier New', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #0b0c10;
+            color: #c5c6c7;
+        }
+        .login-container {
+            background: #1f2528;
+            padding: 12px;
+            border-radius: 4px;
+            width: 260px; /* Fixed width for login container */
+            text-align: left;
+            border: 1px solid #2a2e33;
+        }
+        .dashboard {
+            background: #1f2528;
+            padding: 12px;
+            border-radius: 4px;
+            width: 800px; /* Wider width for contract registry */
+            text-align: left;
+            border: 1px solid #2a2e33;
+        }
+        input {
+            width: 100%;
+            padding: 6px;
+            margin: 6px 0;
+            border: 1px solid #2a2e33;
+            border-radius: 3px;
+            background: #0b0c10;
+            color: #66fcf1;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 6px;
+            background: #45a29e;
+            color: #0b0c10;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        button:hover {
+            background: #66fcf1;
+            color: #0b0c10;
+        }
+        .error {
+            color: #ff2e2e;
+            font-size: 10px;
+            margin-top: 6px;
+        }
+        .hidden {
+            display: none;
+        }
+        h2 {
+            font-size: 14px;
+            margin: 0 0 10px;
+            color: #66fcf1;
+            text-transform: uppercase;
+        }
+        p {
+            font-size: 12px;
+            margin: 0 0 10px;
+        }
+        .prompt::before {
+            content: "> ";
+            color: #66fcf1;
+        }
+
+        /* --- CONTRACT REGISTRY STYLES --- */
+        /* Styling for the contract list and briefing views */
+        .contract-list a {
+            display: block;
+            text-decoration: none;
+            color: #c5c6c7;
+            padding: 10px 5px; /* Original padding */
+            border-bottom: 1px solid #2a2e33;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .contract-list a:hover {
+            background-color: #66fcf1;
+            color: #0b0c10;
+        }
+        .contract-header, .contract-row {
+            display: grid;
+            grid-template-columns: 35% 35% 30%; /* Original proportions for wider layout */
+            gap: 10px; /* Original gap */
+            font-size: 13px; /* Original font size */
+        }
+        .contract-header {
+            color: #66fcf1;
+            padding: 5px;
+            border-bottom: 1px solid #66fcf1;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        .status-active { color: #66fcf1; }
+        .status-archive { color: #888; }
+        .briefing-header {
+            border-bottom: 1px solid #66fcf1;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 15px;
+            padding: 5px 8px;
+            border: 1px solid #45a29e;
+            color: #45a29e;
+            font-size: 13px;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .back-link:hover {
+            background-color: #45a29e;
+            color: #0b0c10;
+        }
+        .tabs {
+            margin: 20px 0 15px;
+            border-bottom: 1px solid #2a2e33;
+            padding-bottom: 10px;
+        }
+        .tabs span {
+            color: #45a29e;
+            cursor: pointer;
+            margin-right: 20px;
+            text-transform: uppercase;
+            font-size: 14px;
+        }
+        .tabs .active-tab {
+            color: #66fcf1;
+            font-weight: bold;
+        }
+        .content-box {
+            border: 1px solid #2a2e33;
+            padding: 15px;
+            background-color: #0d1117;
+            min-height: 250px;
+            font-size: 13px;
+        }
+        .content-box h4 {
+            color: #c5c6c7;
+            text-transform: uppercase;
+            border-bottom: 1px dashed #2a2e33;
+            padding-bottom: 5px;
+            margin: 0 0 10px 0;
+        }
+        .content-box p {
+            margin: 0 0 10px;
+            line-height: 1.6;
+        }
+        .content-box .target-img {
+            float: left;
+            width: 100px; /* Original image size */
+            height: 100px;
+            object-fit: cover;
+            margin-right: 15px;
+            border: 1px solid #2a2e33;
+            filter: grayscale(100%) contrast(1.2);
+        }
+        .content-box ul {
+            list-style-type: none;
+            padding-left: 15px;
+        }
+        .content-box li::before {
+            content: "- ";
+        }
+    </style>
+</head>
+<body>
+    <!-- LOGIN CONTAINER: Handles user authentication -->
+    <div id="login-container" class="login-container">
+        <h2 class="prompt">System Access</h2>
+        <input type="text" id="username" placeholder="User ID" required>
+        <input type="password" id="password" placeholder="Access Code" required>
+        <button onclick="handleLogin()">Execute</button>
+        <p id="error-message" class="error hidden"></p>
+    </div>
+
+    <!-- DASHBOARD: Displays after successful login, contains contract registry -->
+    <div id="dashboard" class="dashboard hidden">
+        <p>Access: AUTHORIZED</p>
+        <!-- CONTRACT REGISTRY: Displays list of contracts and briefing details -->
+        <div id="main-view">
+            <!-- Heading for the contract list -->
+            <h2 class="prompt">Contract Registry</h2>
+            <!-- Contract header row defining column titles -->
+            <div class="contract-header">
+                <div>CODENAME</div>
+                <div>LOCATION</div>
+                <div>STATUS</div>
+            </div>
+            <!-- Contract list: Each link shows a briefing when clicked -->
+            <div class="contract-list">
+                <!-- Contract 1: Editable link and details -->
+                <a href="#" onclick="showBriefing('vintage-year')">
+                    <div class="contract-row">
+                        <div>Thief of the Script</div>
+                        <div>5FVR+C4V</div>
+                        <div class="status-active">[BRIEFING AVAILABLE]</div>
+                    </div>
+                </a>
+                <!-- Contract 2: Placeholder for unavailable briefing -->
+                <a href="#" onclick="showBriefing('curtains-down')">
+                    <div class="contract-row">
+                        <div>Unavailable</div>
+                        <div>Unavailable</div>
+                        <div class="status-archive">[BRIEFING UNAVAILABLE]</div>
+                    </div>
+                </a>
+                <!-- Contract 3: Placeholder for unavailable briefing -->
+                <a href="#" onclick="showBriefing('a-new-life')">
+                    <div class="contract-row">
+                        <div>Unavailable</div>
+                        <div>Unavailable</div>
+                        <div class="status-archive">[BRIEFING UNAVAILABLE]</div>
+                    </div>
+                </a>
+                <!-- Contract 4: Archived, no briefing available -->
+                <a href="#" onclick="return false;">
+                    <div class="contract-row">
+                        <div>Unavailable</div>
+                        <div>Unavailable</div>
+                        <div class="status-archive">[ARCHIVED]</div>
+                    </div>
+                </a>
+                <!-- Contract 5: Archived, no briefing available -->
+                <a href="#" onclick="return false;">
+                    <div class="contract-row">
+                        <div>Unavailable</div>
+                        <div>Unavailable</div>
+                        <div class="status-archive">[ARCHIVED]</div>
+                    </div>
+                </a>
+            </div>
+        </div>
+        <!-- BRIEFING VIEW: Displays detailed briefing when a contract is selected -->
+        <div id="briefing-view" class="hidden"></div>
+    </div>
+
+    <script>
+        // --- LOGIN SYSTEM LOGIC ---
+        // Define allowed usernames and passwords
+        const credentials = [
+            { username: "$", password: "asdrrl" }, // User 1: Edit username or password here
+            { username: "uno", password: "asdrrl" }, // User 2: Edit username or password here
+            { username: "mr_future", password: "0429415" } // User 3: Edit username or password here
+        ];
+
+        // Handle login attempts
+        function handleLogin() {
+            // Get and trim input values to remove accidental spaces
+            const username = document.getElementById("username").value.trim();
+            const password = document.getElementById("password").value.trim();
+            const errorMessage = document.getElementById("error-message");
+            const loginContainer = document.getElementById("login-container");
+            const dashboard = document.getElementById("dashboard");
+
+            // Check for empty inputs
+            if (!username || !password) {
+                errorMessage.textContent = "ACCESS DENIED: ID and Code required";
+                errorMessage.classList.remove("hidden");
+                return;
+            }
+
+            // Find matching user in credentials array
+            const user = credentials.find(cred => cred.username === username);
+            if (!user) {
+                errorMessage.textContent = "ACCESS DENIED: User ID not found";
+                errorMessage.classList.remove("hidden");
+            } else if (user.password !== password) {
+                errorMessage.textContent = "ACCESS DENIED: Invalid Access Code";
+                errorMessage.classList.remove("hidden");
+            } else {
+                // Successful login: Show dashboard, hide login
+                loginContainer.classList.add("hidden");
+                dashboard.classList.remove("hidden");
+                errorMessage.classList.add("hidden");
+            }
+        }
+
+        // --- CONTRACT REGISTRY LOGIC ---
+        // Database of briefings, editable for adding new contracts
+        const briefings = {
+            // Add new briefing entries here with unique IDs
+            "vintage-year": {
+                codename: "Thief of The Script", // Edit codename
+                location: "AVBIL HLD Xth F", // Edit location
+                tabs: {
+                    parameters: `
+                        <h4>Mission Parameters</h4>
+                        <p><strong>PRIMARY OBJECTIVES:</strong></p>
+                        <ul>
+                            <li>Retrieve the script</li> <!-- Edit objective -->
+                            <li>Eliminate the Anchoring Script</li> <!-- Edit objective -->
+                            <li>Submit Report Inclusive of your Findings</li> <!-- Edit objective -->
+                        </ul>
+                        <p><strong>INTEL:</strong></p>
+                        <ul>
+                            <li>Atharva Pundhir, the guy operating the SCRIPT is ignorant in terms of 'his' work, in reality done by AI, when asked to change his script, our client wants the script removed.</li> <!-- Edit intel -->
+                            <li>We want you to retrive the script for the drama tht is gonna happen (but remember to not destroy).</li> <!-- Edit intel -->
+                            <li>But the Anchoring part, although pretty crap, Atharva Pundhir would refuse to change or atleast create issues doing in so so we reqire you to remove any and all hard copies of the 'Anchoring Script'.</li> <!-- Edit intel -->
+                        </ul>
+                    `,
+                    targets: `
+                        <h4>Target Dossier</h4>
+                        <img src="https://media.discordapp.net/attachments/1272490794900521097/1280202945039962163/IMG_0024.JPG?ex=6875d927&is=687487a7&hm=423bce6c9118d812d4375262ec58d05ca4e4f52d8a2f44f59ffcefbdb65efbd9&=&format=webp&width=642&height=856" class="target-img" alt="Atharva Pundhir"> <!-- Edit image URL or alt text -->
+                        <p><strong>NAME:</strong> Atharva Pundhir</p> <!-- Edit name -->
+                        <p><strong>ROLE:</strong> Anchoring Scripter</p> <!-- Edit role -->
+                        <p><strong>NOTES:</strong> An accomplished Teacher pet and former class representative. Spends much of his time practicing with discussion that aren't really validated. Heavily guards the script.</p> <!-- Edit notes -->
+                        <br style="clear:both;">
+                        <hr style="border-color:#2a2e33; margin: 15px 0;">
+                        <img src="https://cdn.discordapp.com/attachments/1272490794900521097/1394299539338428434/lHeOAb5.png?ex=68764e23&is=6874fca3&hm=8094fd3e1dd0d5058c800fc2919b3e761b1ac8727ee76a6b477517ffa465650e&" class="target-img" alt="Bhaviya Budhani"> <!-- Edit image URL or alt text -->
+                        <p><strong>NAME:</strong> Bhaviya Budhani</p> <!-- Edit name -->
+                        <p><strong>ROLE:</strong> The Drama Scripter</p> <!-- Edit role -->
+                        <p><strong>NOTES:</strong> A known artist with a volatile and fragile ego. She is overseeing the script and the cast. She is rarely alone, but as you would be in the cover of a 'radio voice', one of the cst it should not be an issue to gather the intel.</p> <!-- Edit notes -->
+                    `,
+                    layout: `
+                        <h4>Map & Layout</h4>
+                        <p><strong>LOCATION:</strong> Your current standard... i.e., Xth F in the 3rd row and the 4th row.</p> <!-- Edit location -->
+                        <p><strong>KEY INFO:</strong></p>
+                        <ul>
+                            <li><strong>Secrecy: In the event you or any of your recruted team members are caught, the secratory will disavow any action you take and exsistance and your links with THE AGENCY</strong></p> <!-- Edit info -->
+                            <li><strong>Secrecy: Your callsign is alpha 1-2. Your Agency handler is reffered to as Bravo 6-5.</strong></p> <!-- Edit info -->
+                        </ul>
+                        <p><strong>INTEL SUGGESTS:</strong> It is easy to breach the girls, Atharva might be a tough one as you require to obtain and destroy the files undetected.</p> <!-- Edit intel -->
+                    `
+                }
+            },
+            // Add or edit additional briefings below
+            "curtains-down": {
+                codename: "Curtains Down", // Edit codename
+                location: "Opéra Garnier, Paris, France", // Edit location
+                tabs: {
+                    parameters: `
+                        <h4>Mission Parameters</h4>
+                        <p><strong>PRIMARY OBJECTIVES:</strong></p>
+                        <ul>
+                            <li>Eliminate Alvaro D'Alvade</li> <!-- Edit objective -->
+                            <li>Eliminate Richard Delahunt</li> <!-- Edit objective -->
+                            <li>Escape</li> <!-- Edit objective -->
+                        </ul>
+                        <p><strong>INTEL:</strong></p>
+                        <ul>
+                            <li>The targets are involved in a human trafficking ring operating from the opera house.</li> <!-- Edit intel -->
+                            <li>Ambassador Delahunt is attending the final rehearsal of 'Tosca', in which D'Alvade is the lead tenor.</li> <!-- Edit intel -->
+                            <li>Client has requested the deaths appear accidental if possible. A bonus has been authorized for this.</li> <!-- Edit intel -->
+                        </ul>
+                    `,
+                    targets: `
+                        <h4>Target Dossier</h4>
+                        <img src="https://i.imgur.com/0iH1Z2x.png" class="target-img" alt="Alvaro D'Alvade"> <!-- Edit image URL or alt text -->
+                        <p><strong>NAME:</strong> Alvaro D'Alvade</p> <!-- Edit name -->
+                        <p><strong>ROLE:</strong> Tenor</p> <!-- Edit role -->
+                        <p><strong>NOTES:</strong> Spends most of his time on stage during rehearsal. The play itself features an execution by firing squad using a prop gun. This could be an opportunity.</p> <!-- Edit notes -->
+                        <br style="clear:both;">
+                        <hr style="border-color:#2a2e33; margin: 15px 0;">
+                        <img src="https://i.imgur.com/zN9J3tD.png" class="target-img" alt="Richard Delahunt"> <!-- Edit image URL or alt text -->
+                        <p><strong>NAME:</strong> Richard Delahunt</p> <!-- Edit name -->
+                        <p><strong>ROLE:</strong> US Ambassador</p> <!-- Edit role -->
+                        <p><strong>NOTES:</strong> Will be watching the performance from his private, heavily guarded VIP box. He is a known collector of historical artifacts.</p> <!-- Edit notes -->
+                    `,
+                    layout: `
+                        <h4>Map & Layout</h4>
+                        <p><strong>LOCATION:</strong> A historic, multi-story opera house.</p> <!-- Edit location -->
+                        <p><strong>KEY AREAS:</strong></p>
+                        <ul>
+                            <li><strong>Stage & Backstage:</strong> Multiple levels of catwalks, rigging, and prop rooms. Many potential accidents.</li> <!-- Edit area -->
+                            <li><strong>Lobby & Public Areas:</strong> Crowded with staff and security.</li> <!-- Edit area -->
+                            <li><strong>VIP Boxes:</strong> Limited access, high security. Overlooks the stage.</li> <!-- Edit area -->
+                            <li><strong>Rooftop:</strong> Offers sniper positions and alternative entry points.</li> <!-- Edit area -->
+                        </ul>
+                    `
+                }
+            },
+            "a-new-life": {
+                codename: "A New Life", // Edit codename
+                location: "Suburban San Diego, USA", // Edit location
+                tabs: {
+                    parameters: `
+                        <h4>Mission Parameters</h4>
+                        <p><strong>PRIMARY OBJECTIVES:</strong></p>
+                        <ul>
+                            <li>Eliminate 'Vinnie' Sinistra</li> <!-- Edit objective -->
+                            <li>Retrieve Microfilm</li> <!-- Edit objective -->
+                        </ul>
+                        <p><strong>INTEL:</strong></p>
+                        <ul>
+                            <li>Former mob boss Vinnie Sinistra is in the Witness Protection Program pending his testimony.</li> <!-- Edit intel -->
+                            <li>The client wants him silenced and incriminating evidence (on a microfilm necklace) retrieved.</li> <!-- Edit intel -->
+                            <li>Sinistra is celebrating his daughter's birthday with a neighborhood party. The area is being monitored by FBI agents posing as civilians.</li> <!-- Edit intel -->
+                        </ul>
+                    `,
+                    targets: `
+                        <h4>Target Dossier</h4>
+                        <img src="https://i.imgur.com/yOq9X7C.png" class="target-img" alt="Vinnie Sinistra"> <!-- Edit image URL or alt text -->
+                        <p><strong>NAME:</strong> Vinnie 'The Slug' Sinistra</p> <!-- Edit name -->
+                        <p><strong>ROLE:</strong> Witness Protection Subject</p> <!-- Edit role -->
+                        <p><strong>NOTES:</strong> Extremely paranoid. Rarely leaves his house. Spends time in his office or watching TV. The microfilm is reportedly kept on his person at all times, worn as a necklace.</p> <!-- Edit notes -->
+                        <br style="clear:both;">
+                        <p><strong>INTEL SUGGESTS:</strong> His daughter's birthday party is causing a lot of activity, providing cover. FBI agents are posing as garbage collectors, caterers, and joggers.</p> <!-- Edit intel -->
+                    `,
+                    layout: `
+                        <h4>Map & Layout</h4>
+                        <p><strong>LOCATION:</strong> A quiet, suburban cul-de-sac.</p> <!-- Edit location -->
+                        <p><strong>KEY AREAS:</strong></p>
+                        <ul>
+                            <li><strong>Sinistra's House:</strong> Two-story building. Target's primary location.</li> <!-- Edit area -->
+                            <li><strong>FBI Surveillance Van:</strong> Posed as a catering van. Contains gear and intel.</li> <!-- Edit area -->
+                            <li><strong>Neighboring Houses:</strong> Mostly empty during the day. Can be used for infiltration or sniper positions.</li> <!-- Edit area -->
+                            <li><strong>Treehouse:</strong> Provides a good vantage point of the target's backyard.</li> <!-- Edit area -->
+                        </ul>
+                    `
+                }
+            }
+            // To add a new contract, copy the structure above and create a new entry with a unique ID
+        };
+
+        // Show briefing details for a selected contract
+        function showBriefing(briefingId) {
+            const data = briefings[briefingId];
+            if (!data) return; // Exit if briefing ID not found
+
+            // Define elements inside function to ensure they exist when accessed
+            const briefingView = document.getElementById('briefing-view');
+            const mainView = document.getElementById('main-view');
+
+            // Build HTML for briefing view
+            let briefingHTML = `
+                <div class="briefing-header">
+                    <!-- Back link to return to contract list -->
+                    <a href="#" class="back-link" onclick="showMainView()"><< BACK TO LIST</a>
+                    <h2 class="prompt">${data.codename}</h2>
+                    <p style="margin:0;">LOCATION: ${data.location}</p>
+                </div>
+                <div class="tabs" id="briefing-tabs">
+                    <!-- Tabs for switching between Parameters, Targets, and Layout -->
+                    <span class="active-tab" onclick="switchTab(this, 'parameters')">[PARAMETERS]_</span>
+                    <span onclick="switchTab(this, 'targets')">[TARGETS]</span>
+                    <span onclick="switchTab(this, 'layout')">[LAYOUT]</span>
+                </div>
+                <div class="content-box" id="briefing-content">
+                    ${data.tabs.parameters} <!-- Default to showing parameters tab -->
+                </div>
+            `;
+            
+            // Update briefing view and toggle visibility
+            briefingView.innerHTML = briefingHTML;
+            mainView.classList.add('hidden');
+            briefingView.classList.remove('hidden');
+            briefingView.dataset.currentBriefing = briefingId; // Store current briefing ID
+        }
+
+        // Show main contract list view
+        function showMainView() {
+            // Define elements inside function to ensure they exist
+            const briefingView = document.getElementById('briefing-view');
+            const mainView = document.getElementById('main-view');
+            
+            briefingView.classList.add('hidden');
+            mainView.classList.remove('hidden');
+            briefingView.innerHTML = ""; // Clear briefing content
+        }
+
+        // Switch between tabs in the briefing view
+        function switchTab(tabElement, tabName) {
+            // Define elements inside function
+            const briefingView = document.getElementById('briefing-view');
+            const briefingId = briefingView.dataset.currentBriefing;
+            const data = briefings[briefingId];
+            if (!data) return;
+
+            // Update tab styles: Highlight active tab
+            const tabsContainer = document.getElementById('briefing-tabs');
+            tabsContainer.querySelectorAll('span').forEach(span => {
+                span.classList.remove('active-tab');
+                span.textContent = span.textContent.replace('_', '');
+            });
+            tabElement.classList.add('active-tab');
+            tabElement.textContent += '_';
+            
+            // Update content box with selected tab's content
+            const contentBox = document.getElementById('briefing-content');
+            contentBox.innerHTML = data.tabs[tabName];
+        }
+    </script>
+</body>
+</html>
